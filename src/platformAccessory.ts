@@ -41,8 +41,8 @@ export class NixieClocksPlatformAccessory {
         .onGet(this.getUnderlightHue.bind(this));
 
       this.underlightService.getCharacteristic(this.platform.Characteristic.Saturation)
-        .onSet(this.setUnderlightHue.bind(this))
-        .onGet(this.getUnderlightHue.bind(this));
+        .onSet(this.setUnderlightSaturation.bind(this))
+        .onGet(this.getUnderlightSaturation.bind(this));
     }
   }
 
@@ -88,6 +88,14 @@ export class NixieClocksPlatformAccessory {
 
   async getUnderlightHue(): Promise<CharacteristicValue> {
     return 45;
+  }
+
+  async setUnderlightSaturation(value: CharacteristicValue) {
+    this.platform.log.debug('Set Characteristic Hue -> ', value);
+  }
+
+  async getUnderlightSaturation(): Promise<CharacteristicValue> { //0-100 percent
+    return 100;
   }
 
   async setBrightness(value: CharacteristicValue) {
