@@ -49,6 +49,9 @@ export class ExamplePlatformAccessory {
    */
   async setOn(value: CharacteristicValue) {
     this.platform.log.debug('Set Characteristic On ->', value);
+    const parameterValue = (value as boolean) ? 256 : 0;
+    await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', parameterValue);
+    await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', parameterValue);
   }
 
   /**
