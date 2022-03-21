@@ -1,7 +1,7 @@
 {
   "displayName": "Dalibor Farny Nixie Clocks",
   "name": "homebridge-daliborfarny-nixieclocks",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bringing Nixie tubes back to life and Homekit.",
   "license": "Apache-2.0",
   "repository": {
