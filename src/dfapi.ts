@@ -66,9 +66,10 @@ export class DFApi {
   async getDevices(): Promise<DataResponse<[Clock]>> {
     const body = this.API_AUTH
         + '&access_token=' + this.access_token;
-    this.log.debug(body);
+    const url = this.BASE_URL + '/v1/devices?' + body;
+    this.log.debug(url);
 
-    const response = await fetch(this.BASE_URL + '/v1/devices?' + body, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -89,10 +90,10 @@ export class DFApi {
   async getDeviceParameter(deviceId: string, parameter: string): Promise<DataResponse<ClockParameter>> {
     const body = this.API_AUTH
         + '&access_token=' + this.access_token;
+    const url = this.BASE_URL + '/v1/devices/' + deviceId.toLowerCase() + '/' + parameter + '?' + body;
+    this.log.debug(url);
 
-    this.log.debug(body);
-
-    const response = await fetch(this.BASE_URL + '/v1/devices/' + deviceId.toLowerCase() + '/' + parameter + '?' + body, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -110,12 +111,14 @@ export class DFApi {
   }
 
   async setDeviceParameter(deviceId: string, parameter: string, value: number): Promise<DataResponse<ClockParameter>> {
+    const url = this.BASE_URL + '/v1/devices/' + deviceId.toLowerCase() + '/' + parameter;
+    this.log.debug(url);
     const body = this.API_AUTH
         + '&access_token=' + this.access_token
         + '&arg='+ Math.round(value);
     this.log.debug(body);
 
-    const response = await fetch(this.BASE_URL + '/v1/devices/' + deviceId.toLowerCase() + '/' + parameter, {
+    const response = await fetch(url, {
       method: 'POST',
       body: body,
       headers: {
