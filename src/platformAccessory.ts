@@ -51,8 +51,25 @@ export class NixieClocksPlatformAccessory {
   }
 
   async setOn(value: CharacteristicValue) {
-    //do nothing, it is computed property
     this.platform.log.debug('Set On -> ', value);
+
+    if(value as boolean) {
+      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
+      if(value.ok) {
+        this.platform.log.debug('Current value -> ', value.data.value);
+        if(value.data.value === 1) {
+          await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 255);
+          await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 255);
+          this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 100);
+        }
+      } else {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+    } else {
+      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 0);
+      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 0);
+      this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 0);
+    }
   }
 
   async getOn(): Promise<CharacteristicValue> {
