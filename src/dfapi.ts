@@ -59,7 +59,7 @@ export class DFApi {
       return result;
     } else {
       this.log.error(result.message);
-      return result;
+      throw Error(result.message);
     }
   }
 
@@ -83,7 +83,7 @@ export class DFApi {
       return result;
     } else {
       this.log.error(result.message);
-      return result;
+      throw Error(result.message);
     }
   }
 
@@ -106,7 +106,8 @@ export class DFApi {
     if (result.ok) {
       return result;
     } else {
-      return result;
+      this.log.error(result.message);
+      throw Error(result.message);
     }
   }
 
@@ -133,7 +134,8 @@ export class DFApi {
     if (result.ok) {
       return result;
     } else {
-      return result;
+      this.log.error(result.message);
+      throw Error(result.message);
     }
   }
 }

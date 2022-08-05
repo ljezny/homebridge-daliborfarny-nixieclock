@@ -28,7 +28,7 @@ export class NixieClocksPlatformAccessory {
       .onSet(this.setBrightness.bind(this))
       .onGet(this.getBrightness.bind(this));
 
-    if(this.supportsUnderLight()) {
+    if (this.supportsUnderLight()) {
       this.underlightService = this.accessory.getService('Underlight')
         || this.accessory.addService(this.platform.Service.Lightbulb, 'Underlight', 'Underlight');
 
@@ -52,68 +52,92 @@ export class NixieClocksPlatformAccessory {
 
   async setOn(value: CharacteristicValue) {
     this.platform.log.debug('Set On -> ', value);
-
-    if(value as boolean) {
-      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
-      if(value.ok) {
-        this.platform.log.debug('Current value -> ', value.data.value);
-        if(value.data.value === 1) {
-          await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 255);
-          await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 255);
-          this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 100);
+    try {
+      if (value as boolean) {
+        const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
+        if (value.ok) {
+          this.platform.log.debug('Current value -> ', value.data.value);
+          if (value.data.value === 1) {
+            await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 255);
+            await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 255);
+            this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 100);
+          }
+        } else {
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         }
       } else {
-        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 0);
+        await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 0);
+        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 0);
       }
-    } else {
-      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', 0);
-      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', 0);
-      this.service.updateCharacteristic(this.platform.Characteristic.Brightness, 0);
+    } catch {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
 
   async getOn(): Promise<CharacteristicValue> {
-    const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
-    if(!value.ok) {
+    try {
+      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
+      if (!value.ok) {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+      return value.data.value > 0;
+    } catch {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-    return value.data.value > 0;
   }
 
   async setUnderlightOn(value: CharacteristicValue) {
-    if(!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightsegments',
-      (value as boolean) ? 6 : 1)).ok) {
+    try {
+      if (!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightsegments',
+        (value as boolean) ? 6 : 1)).ok) {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+      if (!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightmode',
+        (value as boolean) ? 2 : 1)).ok) {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+    } catch {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-    if(!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightmode',
-      (value as boolean) ? 2 : 1)).ok){
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-    }
+
   }
 
   async getUnderlightOn(): Promise<CharacteristicValue> {
-    const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'underlightmode');
-    if(!value.ok) {
+    try {
+      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'underlightmode');
+      if (!value.ok) {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+      return value.data.value === 2;
+    } catch {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-    return value.data.value === 2;
   }
 
   async setUnderlightHue(value: CharacteristicValue) {
-    this.platform.log.debug('Set Characteristic Hue -> ', value);
-    const rgb = this.HSVtoRGB(value as number / 360.0, 1.0, 1.0);
-    const color = rgb[0] | (rgb[1] << 8) | (rgb[2] << 16);
-    this.platform.log.debug('Set Characteristic Hue -> final color ', color);
-    await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightsolidcolor', color);
+    try {
+      this.platform.log.debug('Set Characteristic Hue -> ', value);
+      const rgb = this.HSVtoRGB(value as number / 360.0, 1.0, 1.0);
+      const color = rgb[0] | (rgb[1] << 8) | (rgb[2] << 16);
+      this.platform.log.debug('Set Characteristic Hue -> final color ', color);
+      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightsolidcolor', color);
+    } catch {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    }
   }
 
   async getUnderlightHue(): Promise<CharacteristicValue> {
-    const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'underlightsolidcolor');
-    if(!value.ok) {
+    try {
+      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'underlightsolidcolor');
+      if (!value.ok) {
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      }
+
+      return this.RGBtoHSV(value.data.value && 0xFF, (value.data.value >> 8) && 0xFF, (value.data.value >> 16) && 0xFF)[0] * 360 / 255;
+    } catch {
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-
-    return this.RGBtoHSV(value.data.value && 0xFF, (value.data.value >> 8) && 0xFF, (value.data.value >> 16) && 0xFF)[0] * 360 / 255 ;
   }
 
   async setUnderlightSaturation(value: CharacteristicValue) {
@@ -125,19 +149,24 @@ export class NixieClocksPlatformAccessory {
   }
 
   async setBrightness(value: CharacteristicValue) {
-    this.platform.log.debug('Set Characteristic Brightness -> ', value);
-    const parameterValue = ((value as number)* 256) / 100;
-    await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', parameterValue);
-    await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', parameterValue);
+    try {
+      this.platform.log.debug('Set Characteristic Brightness -> ', value);
+      const parameterValue = ((value as number) * 256) / 100;
+      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessday', parameterValue);
+      await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'brightnessnight', parameterValue);
+    } catch {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    }
   }
 
   async getBrightness(): Promise<CharacteristicValue> {
-    this.platform.log.debug('Get Characteristic Brightness');
-    const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
-    if(value.ok) {
+    try {
+      this.platform.log.debug('Get Characteristic Brightness');
+      const value = await this.platform.dfApi.getDeviceParameter(this.accessory.context.device.id, 'brightnessday');
       return (value.data.value * 100) / 256;
+    } catch {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-    throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
   }
 
   HSVtoRGB(h: number, s: number, v: number): number[] {
