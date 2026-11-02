@@ -89,8 +89,10 @@ export class NixieClocksPlatformAccessory {
 
   async setUnderlightOn(value: CharacteristicValue) {
     try {
-      if (!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightsegments',
-        (value as boolean) ? 6 : 1)).ok) {
+      // Segments accept only 2 (bottom), 4 (top) or 6 (both); the clock firmware rejects any other value.
+      // Switching the underlight off is done by underlightmode alone.
+      if ((value as boolean) && !(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id,
+        'underlightsegments', 6)).ok) {
         throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
       }
       if (!(await this.platform.dfApi.setDeviceParameter(this.accessory.context.device.id, 'underlightmode',
